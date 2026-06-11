@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출결관리 시스템</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  background: #f0f4f8;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.header {
+  background: #2196F3;
+  color: white;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.logo { font-size: 20px; font-weight: 700; }
+.main-panel {
+  background: #2196F3;
+  color: white;
+  display: flex;
+  padding: 12px 20px 16px;
+  gap: 20px;
+  flex-shrink: 0;
+}
+.recent-logs { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.log-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.log-time { opacity: 0.85; font-size: 13px; min-width: 70px; }
+.log-name {
+  background: rgba(0,0,0,0.25);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.clock-section {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+.current-date { font-size: 15px; opacity: 0.9; }
+.current-time { font-size: 42px; font-weight: 700; letter-spacing: 2px; line-height: 1; }
+.view-all-btn {
+  background: transparent;
+  border: 2px solid white;
+  color: white;
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+.input-section {
+  background: #e3f2fd;
+  padding: 10px 20px;
+  flex-shrink: 0;
+}
+.input-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #555;
+  min-height: 28px;
+}
+#numberDisplay {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1565C0;
+  letter-spacing: 4px;
+  min-width: 120px;
+}
+.cursor-blink {
+  display: inline-block;
+  width: 2px; height: 22px;
+  background: #1565C0;
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  flex: 1;
+  border-top: 1px solid #ddd;
+}
+.key {
+  background: white;
+  border: 1px solid #e0e0e0;
+  font-size: 26px;
+  color: #2196F3;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  user-select: none;
+  font-family: inherit;
+}
+.key:active { background: #bbdefb; }
+.key.delete { color: #757575; font-size: 18px; }
+.key.enter  { color: #1565C0; font-weight: 700; font-size: 18px; }
+.key.outing {
+  grid-column: span 3;
+  background: #FF9800;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+.key.outing:active { background: #F57C00; }
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.show { display: flex; }
+.alert-box {
+  background: white;
+  border-radius: 20px;
+  padding: 36px 44px;
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.alert-icon { font-size: 56px; margin-bottom: 12px; }
+.alert-name { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 14px; }
+.alert-msg  { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+.alert-time { font-size: 13px; color: #aaa; margin-top: 6px; }
+.alert-memo {
+  background: #FFF8E1;
+  border-left: 4px solid #FFC107;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 15px;
+  color: #5D4037;
+  text-align: left;
+  line-height: 1.5;
+}
+.alert-desk {
+  background: #FFEBEE;
+  border: 2px solid #F44336;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin: 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #C62828;
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  from { opacity: 0.8; transform: scale(0.98); }
+  to   { opacity: 1.0; transform: scale(1.02); }
+}
+.alert-bar {
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 20px;
+  animation: shrink linear forwards;
+}
+@keyframes shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+.error-toast {
+  display: none;
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f44336;
+  color: white;
+  padding: 12px 28px;
+  border-radius: 30px;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 2000;
+}
+.error-toast.show { display: block; }
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1500;
+  align-items: center;
+  justify-content: center;
+}
+.modal.show { display: flex; }
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header {
+  background: #2196F3;
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+.modal-body { overflow-y: auto; padding: 16px; }
+.log-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.log-table th {
+  background: #e3f2fd;
+  color: #1565C0;
+  padding: 8px 10px;
+  text-align: left;
+}
+.log-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">📋 출결관리 시스템</div>
+</div>
+
+<div class="main-panel">
+  <div class="recent-logs" id="recentLogs">
+    <div style="opacity:0.6; font-size:13px;">최근 출결 기록이 없습니다</div>
+  </div>
+  <div class="clock-section">
+    <div class="current-date" id="currentDate"></div>
+    <div class="current-time" id="currentTime">00:00:00</div>
+    <button class="view-all-btn" onclick="openAllLogs()">≡ 기록전체보기</button>
+  </div>
+</div>
+
+<div class="input-section">
+  <div class="input-display">
+    <span>👤</span>
+    <span id="hint">출결번호를 입력하세요.</span>
+    <span id="numberDisplay"></span>
+    <span class="cursor-blink"></span>
+  </div>
+</div>
+
+<div class="keypad">
+  <button class="key" onclick="pressKey('1')">1</button>
+  <button class="key" onclick="pressKey('2')">2</button>
+  <button class="key" onclick="pressKey('3')">3</button>
+  <button class="key" onclick="pressKey('4')">4</button>
+  <button class="key" onclick="pressKey('5')">5</button>
+  <button class="key" onclick="pressKey('6')">6</button>
+  <button class="key" onclick="pressKey('7')">7</button>
+  <button class="key" onclick="pressKey('8')">8</button>
+  <button class="key" onclick="pressKey('9')">9</button>
+  <button class="key delete" onclick="deleteKey()">지움</button>
+  <button class="key" onclick="pressKey('0')">0</button>
+  <button class="key enter" onclick="submitNumber()">입력</button>
+  <button class="key outing" onclick="submitOuting()">🚶 외출</button>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeOverlay()">
+  <div class="alert-box" id="alertBox" onclick="event.stopPropagation()">
+    <div id="alertIcon" class="alert-icon"></div>
+    <div id="alertName" class="alert-name"></div>
+    <div id="alertMsg"  class="alert-msg"></div>
+    <div id="alertMemo" class="alert-memo" style="display:none"></div>
+    <div id="alertDesk" class="alert-desk" style="display:none">🙋 데스크에 문의하세요</div>
+    <div id="alertTime" class="alert-time"></div>
+    <div id="alertBar"  class="alert-bar"></div>
+  </div>
+</div>
+
+<div class="error-toast" id="errorToast"></div>
+
+<div class="modal" id="logsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      📋 전체 출결 기록
+      <button class="modal-close" onclick="closeAllLogs()">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="log-table">
+        <thead>
+          <tr><th>날짜</th><th>시간</th><th>번호</th><th>이름</th><th>구분</th></tr>
+        </thead>
+        <tbody id="logsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzymbqdFZ_wttpHiR-CoQEr-MV_D1lFgMsd3y3E7JRkeTkpUi2HYFTQXuL4ycG_cNXr/exec';
+
+let inputNumber  = '';
+let isProcessing = false;
+let overlayTimer = null;
+const AUTO_CLOSE = 4000;
+
+function updateClock() {
+  const now  = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('currentDate').textContent =
+    now.getFullYear() + '년 ' +
+    String(now.getMonth()+1).padStart(2,'0') + '월 ' +
+    String(now.getDate()).padStart(2,'0') + '일 ' +
+    days[now.getDay()] + '요일';
+  document.getElementById('currentTime').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function pressKey(digit) {
+  if (isProcessing) return;
+  if (inputNumber.length >= 10) return;
+  if (inputNumber === '') document.getElementById('hint').style.display = 'none';
+  inputNumber += digit;
+  document.getElementById('numberDisplay').textContent = inputNumber;
+}
+
+function deleteKey() {
+  if (isProcessing) return;
+  inputNumber = inputNumber.slice(0, -1);
+  document.getElementById('numberDisplay').textContent = inputNumber;
+  if (inputNumber === '') document.getElementById('hint').style.display = '';
+}
+
+function callScript(number, action, callback) {
+  const cbName = 'cb_' + Date.now();
+  window[cbName] = function(result) {
+    delete window[cbName];
+    document.getElementById('jsonp-script')?.remove();
+    callback(result);
+  };
+  const script = document.createElement('script');
+  script.id  = 'jsonp-script';
+  script.src = SCRIPT_URL + '?callback=' + cbName + '&number=' + encodeURIComponent(number) + '&action=' + (action || '');
+  document.body.appendChild(script);
+}
+
+function submitNumber() {
+  if (isProcessing) return;
+  if (!inputNumber) { showError('번호를 입력해주세요'); return; }
+  isProcessing = true;
+  callScript(inputNumber, 'checkin', onResult);
+}
+
+function submitOuting() {
+  if (isProcessing) return;
+  if (!inputNumber) { showError('번호를 입력해주세요'); return; }
+  isProcessing = true;
+  callScript(inputNumber, 'outing', onOutingResult);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+  else if (e.key === 'Backspace') deleteKey();
+  else if (e.key === 'Enter') submitNumber();
+});
+
+function onResult(result) {
+  isProcessing = false;
+  inputNumber  = '';
+  document.getElementById('numberDisplay').textContent = '';
+  document.getElementById('hint').style.display = '';
+
+  if (!result.success && !result.showDesk) {
+    playBeep('error');
+    showError(result.message || '오류가 발생했습니다');
+    return;
+  }
+
+  if (result.showDesk) {
+    document.getElementById('alertIcon').textContent = '🚫';
+    document.getElementById('alertMsg').textContent  = '';
+    document.getElementById('alertBox').style.borderTop = '5px solid #F44336';
+    playBeep('error');
+  } else {
+    document.getElementById('alertIcon').textContent = '✅';
+    document.getElementById('alertMsg').textContent  = '체크 되었습니다';
+    document.getElementById('alertBox').style.borderTop = '5px solid #4CAF50';
+    playBeep('success');
+  }
+
+  document.getElementById('alertName').textContent = result.name || '';
+
+  const memoEl = document.getElementById('alertMemo');
+  if (result.memo && result.memo.trim() !== '') {
+    memoEl.textContent   = '📌 ' + result.memo;
+    memoEl.style.display = 'block';
+  } else {
+    memoEl.style.display = 'none';
+  }
+
+  document.getElementById('alertDesk').style.display = result.showDesk ? 'block' : 'none';
+
+  const t = result.time || new Date().toTimeString().slice(0,8);
+  document.getElementById('alertTime').textContent = t + ' 처리됨';
+
+  const bar   = document.getElementById('alertBar');
+  const color = result.showDesk ? '#F44336' : '#4CAF50';
+  bar.style.background = color;
+  bar.style.animation  = 'none';
+  bar.offsetHeight;
+  bar.style.animation  = `shrink ${AUTO_CLOSE}ms linear forwards`;
+
+  document.getElementById('overlay').classList.add('show');
+  clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(closeOverlay, AUTO_CLOSE);
+}
+
+function onOutingResult(result) {
+  isProcessing = false;
+  inputNumber  = '';
+  document.getElementById('numberDisplay').textContent = '';
+  document.getElementById('hint').style.display = '';
+
+  if (!result.name) {
+    playBeep('error');
+    showError(result.message || '등록되지 않은 번호입니다');
+    return;
+  }
+
+  playBeep('success');
+  document.getElementById('alertIcon').textContent = '🚶';
+  document.getElementById('alertName').textContent = result.name;
+  document.getElementById('alertMsg').textContent  = '외출';
+  document.getElementById('alertMemo').style.display = 'none';
+  document.getElementById('alertDesk').style.display = 'none';
+  document.getElementById('alertBox').style.borderTop = '5px solid #FF9800';
+
+  const t = result.time || new Date().toTimeString().slice(0,8);
+  document.getElementById('alertTime').textContent = t + ' 처리됨';
+
+  const bar = document.getElementById('alertBar');
+  bar.style.background = '#FF9800';
+  bar.style.animation  = 'none';
+  bar.offsetHeight;
+  bar.style.animation  = `shrink ${AUTO_CLOSE}ms linear forwards`;
+
+  document.getElementById('overlay').classList.add('show');
+  clearTimeout(overlayTimer);
+  overlayTimer = setTimeout(closeOverlay, AUTO_CLOSE);
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('show');
+  clearTimeout(overlayTimer);
+}
+
+let toastTimer;
+function showError(msg) {
+  const toast = document.getElementById('errorToast');
+  toast.textContent = '⚠ ' + msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep(type) {
+  try {
+    const profiles = {
+      success: { freqs: [523, 659, 784], dur: 0.12, vol: 0.4, wave: 'sine'     },
+      error  : { freqs: [300, 200],      dur: 0.18, vol: 0.5, wave: 'sawtooth' }
+    };
+    const p = profiles[type] || profiles.success;
+    let t = audioCtx.currentTime + 0.01;
+    p.freqs.forEach(freq => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.type = p.wave;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(p.vol, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + p.dur);
+      o.start(t);
+      o.stop(t + p.dur + 0.01);
+      t += p.dur;
+    });
+  } catch(e) {}
+}
+
+function openAllLogs() {
+  document.getElementById('logsModal').classList.add('show');
+  document.getElementById('logsTableBody').innerHTML =
+    '<tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa">불러오는 중...</td></tr>';
+  callScript('__logs__', 'alllogs', renderAllLogs);
+}
+
+function renderAllLogs(logs) {
+  const tbody = document.getElementById('logsTableBody');
+  if (!logs || logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa">기록 없음</td></tr>';
+    return;
+  }
+  tbody.innerHTML = logs.map(log => `
+    <tr>
+      <td>${log.date}</td>
+      <td>${log.time}</td>
+      <td>${log.number}</td>
+      <td><strong>${log.name}</strong></td>
+      <td>${log.action || '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function closeAllLogs() {
+  document.getElementById('logsModal').classList.remove('show');
+}
+</script>
+</body>
+</html>
