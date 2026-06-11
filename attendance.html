@@ -375,8 +375,10 @@ function submitNumber() {
   if (isProcessing) return;
   if (!inputNumber) { showError('번호를 입력해주세요'); return; }
   isProcessing = true;
+  document.getElementById('numberDisplay').textContent = '처리 중...';
   callScript(inputNumber, 'checkin', onResult);
 }
+
 
 function submitOuting() {
   if (isProcessing) return;
