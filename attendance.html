@@ -390,7 +390,7 @@ function submitOuting() {
     inputNumber  = '';
     document.getElementById('numberDisplay').textContent = '';
     document.getElementById('hint').style.display = '';
-    document.getElementById('cursor').style.display = '';
+   
     if (!result.name) { playBeep('error'); showError(result.message || '등록되지 않은 번호입니다'); return; }
     showOverlay({
       icon  : '🚶',
