@@ -384,8 +384,26 @@ function submitOuting() {
   if (isProcessing) return;
   if (!inputNumber) { showError('번호를 입력해주세요'); return; }
   isProcessing = true;
-  callScript(inputNumber, 'outing', onOutingResult);
+  document.getElementById('numberDisplay').textContent = '처리 중...';
+  callScript(inputNumber, 'outing', function(result) {
+    isProcessing = false;
+    inputNumber  = '';
+    document.getElementById('numberDisplay').textContent = '';
+    document.getElementById('hint').style.display = '';
+    document.getElementById('cursor').style.display = '';
+    if (!result.name) { playBeep('error'); showError(result.message || '등록되지 않은 번호입니다'); return; }
+    showOverlay({
+      icon  : '🚶',
+      name  : result.name,
+      msg   : '외출',
+      memo  : '',
+      desk  : false,
+      time  : result.time || new Date().toTimeString().slice(0,8),
+      color : '#FF9800'
+    });
+  });
 }
+
 
 document.addEventListener('keydown', (e) => {
   if (e.key >= '0' && e.key <= '9') pressKey(e.key);
